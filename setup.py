@@ -12,6 +12,9 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = []
+with open('requirements.txt', 'r') as f:
+    requirements = [l for l in f.read().split('\n') if l.strip()]
+
 
 setup_requirements = ['pytest-runner']
 
@@ -47,6 +50,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/vertcli/dataprocess',
-    version='0.1.0',
+    version='0.1.1',
     zip_safe=False,
 )
