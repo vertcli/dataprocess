@@ -120,7 +120,7 @@ class ClienteCoberturaMovil:
 
     def generate_map_plot(
         self,
-        operation: Union[Literal["count", "aggregate"], None] = None,
+        operation: Union[Literal["point_count", "count", "aggregate"], None] = None,
         aggregated_column: Union[str, None] = None,
         figsize: Tuple[int] = (10, 10),
         color: str = "yellow",
@@ -149,6 +149,33 @@ class ClienteCoberturaMovil:
                 ax=ax, marker="o", color=color, markersize=markersize
             )  # Plot the points
 
+        elif operation == "point_count":
+            assert aggregated_column in self.dataframe.columns
+            norm = mcolors.Normalize(
+                vmin=points_within_cat[aggregated_column].min(),
+                vmax=points_within_cat[aggregated_column].max(),
+            )
+            cmap = plt.cm.RdYlGn
+
+            self.map.plot(ax=ax)  # Plot the base map
+
+            # Create a scatter plot for the points
+            scatter = ax.scatter(
+                points_within_cat["long"],
+                points_within_cat["lat"],
+                c=points_within_cat[aggregated_column],
+                cmap=cmap,
+                norm=norm,
+                marker="o",
+                linewidth=0.5,
+                s=10,
+            )
+            if legend_title != "":
+                # Create a colorbar as a legend
+                cbar = fig.colorbar(
+                    scatter, ax=ax, orientation="vertical", shrink=0.7, aspect=20
+                )
+                cbar.set_label(legend_title)
         elif operation == "count":
             # Count the number of points within each polygon and give the series a name
             point_counts = (
