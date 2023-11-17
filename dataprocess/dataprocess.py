@@ -127,8 +127,8 @@ class ClienteCoberturaMovil:
         markersize: int = 5,
         legend_title: str = "",
     ) -> None:
-        assert "long" in self.dataframe.columns
-        assert "lat" in self.dataframe.columns
+        if "long" not in self.dataframe.columns or "lat" not in self.dataframe.columns:
+            raise Exception("Missing columns long or lat in the current DataFrame")
         # Convert the DataFrame to a GeoDataFrame
         gdf_points = gpd.GeoDataFrame(
             self.dataframe,
@@ -150,7 +150,10 @@ class ClienteCoberturaMovil:
             )  # Plot the points
 
         elif operation == "point_count":
-            assert aggregated_column in self.dataframe.columns
+            if aggregated_column not in self.dataframe.columns:
+                raise Exception(
+                    f"Column not present in dataframe. Looking for {aggregated_column} in a dataframe with columns {self.dataframe.columns}"
+                )
             norm = mcolors.Normalize(
                 vmin=points_within_cat[aggregated_column].min(),
                 vmax=points_within_cat[aggregated_column].max(),
@@ -204,9 +207,12 @@ class ClienteCoberturaMovil:
                     sm, ax=ax, orientation="vertical", shrink=0.7, aspect=20
                 )
                 cbar.set_label(legend_title)
-        else:
+        elif operation == "aggregate":
             # Count the number of 'adult' individuals within each polygon
-            assert aggregated_column in self.dataframe
+            if aggregated_column not in self.dataframe.columns:
+                raise Exception(
+                    f"Column not present in dataframe. Looking for {aggregated_column} in a dataframe with columns {self.dataframe.columns}"
+                )
             aggregate = (
                 points_within_cat.groupby("index_right")[aggregated_column]
                 .sum()
@@ -234,6 +240,9 @@ class ClienteCoberturaMovil:
                     sm, ax=ax, orientation="vertical", shrink=0.7, aspect=20
                 )
                 cbar.set_label(legend_title)
-
+        else:
+            raise Exception(
+                "Invalid operations. Accpeted: None, point_count, count and aggregate"
+            )
         plt.show()
         return
