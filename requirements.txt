@@ -1,1 +1,4 @@
 google-cloud-bigquery==3.13.0
+pandas==1.5.3
+geopandas==0.13.2
+db-dtypes==1.1.1

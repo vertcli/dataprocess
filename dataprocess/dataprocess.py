@@ -2,9 +2,15 @@
 """Main module template with example functions."""
 
 
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Union, Literal, Tuple
 from google.cloud import bigquery
+import pandas as pd
 from google.oauth2.service_account import Credentials
+import geopandas as gpd
+from shapely.geometry import Point
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import matplotlib
 
 
 class ClienteCoberturaMovil:
@@ -29,15 +35,17 @@ class ClienteCoberturaMovil:
             project=credenciales.project_id, credentials=credenciales
         )
         self.nombre_tabla = nombre_tabla
+        self.dataframe = pd.DataFrame()
+        self.map = None
 
-    def seleccionar_datos(self, parametros_busqueda: Dict[str, Any]) -> List[Any]:
+    def seleccionar_datos(self, parametros_busqueda: Dict[str, Any]) -> pd.DataFrame:
         """Realiza una consulta a BigQuery basada en parámetros de búsqueda específicos.
 
         Args:
             parametros_busqueda (Dict[str, Any]): Diccionario con los parámetros de búsqueda.
 
         Returns:
-            List[Any]: Una lista de resultados de la consulta.
+            DataFrame: DataFrame de resultados de la consulta.
         """
         # Construir la consulta SQL basada en los parámetros de búsqueda
         consulta = f"SELECT * FROM `{self.nombre_tabla}` WHERE "
@@ -48,37 +56,157 @@ class ClienteCoberturaMovil:
 
         # Realizar la consulta y retornar los resultados
         tarea_consulta = self.cliente.query(consulta_completa)
-        return [fila for fila in tarea_consulta]
+        self.dataframe = tarea_consulta.to_dataframe()
+        return self.dataframe
 
-    def generar_kpi_cobertura(self) -> dict:
+    def generar_kpi_cobertura(self, metric: str) -> pd.DataFrame:
         """Genera KPIs relacionados con la cobertura de la red móvil.
 
         Returns:
-            dict: Un diccionario con los KPIs calculados.
+            DataFrame: Un DataFrame con los KPIs calculados.
         """
         # Implementación de ejemplo para calcular KPIs de interés
         consulta_kpi = f"""
-        SELECT town_name, AVG(signal) as avg_signal
+        SELECT town_name, postal_code, {metric}(signal) as signal
         FROM `{self.nombre_tabla}`
-        GROUP BY town_name
-        ORDER BY avg_signal
+        GROUP BY town_name, postal_code
         """
         tarea_consulta = self.cliente.query(consulta_kpi)
-        return {fila["town_name"]: fila["avg_signal"] for fila in tarea_consulta}
+        self.dataframe = tarea_consulta.to_dataframe()
+        return self.dataframe
 
-    def identificar_zonas_baja_cobertura(self) -> List[str]:
-        """Identifica zonas con baja cobertura de red móvil.
+    def set_dataframe(self, dataframe: pd.DataFrame) -> pd.DataFrame:
+        """Asigna un DataFrame a la clase
 
         Returns:
-            List[str]: Lista de nombres de ciudades con baja cobertura.
+            DataFrame: Devuelve el DataFrame.
         """
-        # Implementación de ejemplo para identificar zonas con baja cobertura
-        limite_cobertura = 10  # Valor de umbral para considerar baja cobertura
-        consulta_baja_cobertura = f"""
-        SELECT town_name
+        self.dataframe = dataframe
+        return self.dataframe
+
+    def set_map(self, map_path: str) -> None:
+        """Carga un mapa a la clase a partir del path.
+
+        Returns:
+            None
+        """
+        self.map = gpd.read_file(map_path)
+        return
+
+    def generar_coordenadas(self) -> pd.DataFrame:
+        """Genera una tabla de coordenadas geograficas de los puntos de los pueblos.
+
+        Returns:
+            DataFrame: Un DataFrame con las coordenadas calculados.
+        """
+        # Implementación de ejemplo para calcular KPIs de interés
+        consulta_kpi = f"""
+        SELECT town_name, postal_code, long, lat
         FROM `{self.nombre_tabla}`
-        GROUP BY town_name
-        HAVING AVG(signal) < {limite_cobertura}
+        WHERE town_name IS NOT NULL
+        GROUP BY town_name, postal_code, long, lat
         """
-        tarea_consulta = self.cliente.query(consulta_baja_cobertura)
-        return [fila["town_name"] for fila in tarea_consulta]
+        tarea_consulta = self.cliente.query(consulta_kpi)
+        print("DID QUERY")
+        self.dataframe = tarea_consulta.to_dataframe()
+        print("DID ASSIGN")
+        self.dataframe = (
+            self.dataframe.groupby(["town_name", "postal_code"])[["long", "lat"]]
+            .mean()
+            .reset_index()
+        )
+        print("DID GROUP")
+        return self.dataframe
+
+    def generate_map_plot(
+        self,
+        operation: Union[Literal["count", "aggregate"], None] = None,
+        aggregated_column: Union[str, None] = None,
+        figsize: Tuple[int] = (10, 10),
+        color: str = "yellow",
+        markersize: int = 5,
+        legend_title: str = "",
+    ) -> None:
+        assert "long" in self.dataframe.columns
+        assert "lat" in self.dataframe.columns
+        # Convert the DataFrame to a GeoDataFrame
+        gdf_points = gpd.GeoDataFrame(
+            self.dataframe,
+            geometry=gpd.points_from_xy(self.dataframe["long"], self.dataframe["lat"]),
+        )
+
+        # Ensure the CRS of both GeoDataFrames are the same
+        gdf_points.crs = self.map.crs
+
+        points_within_cat = gpd.sjoin(
+            gdf_points, self.map, how="inner", predicate="within"
+        )
+        fig, ax = plt.subplots(figsize=figsize)
+
+        if operation is None:
+            self.map.plot(ax=ax)  # Plot the base map
+            points_within_cat.plot(
+                ax=ax, marker="o", color=color, markersize=markersize
+            )  # Plot the points
+
+        elif operation == "count":
+            # Count the number of points within each polygon and give the series a name
+            point_counts = (
+                points_within_cat.groupby("index_right").size().rename("point_count")
+            )
+
+            # Merge these counts back into the 'cat' GeoDataFrame
+            cat_with_counts = self.map.join(point_counts, how="left")
+            cat_with_counts.fillna(
+                0, inplace=True
+            )  # Replace NaN with 0 for polygons with no points
+
+            cat_with_counts.plot(
+                column="point_count", ax=ax, legend=False
+            )  # Turn off default legend
+
+            # Create a color bar manually
+            if legend_title != "":
+                norm = matplotlib.colors.Normalize(
+                    vmin=cat_with_counts["point_count"].min(),
+                    vmax=cat_with_counts["point_count"].max(),
+                )
+                sm = plt.cm.ScalarMappable(cmap="viridis", norm=norm)
+                sm._A = []  # Dummy array for the ScalarMappable
+                cbar = fig.colorbar(
+                    sm, ax=ax, orientation="vertical", shrink=0.7, aspect=20
+                )
+                cbar.set_label(legend_title)
+        else:
+            # Count the number of 'adult' individuals within each polygon
+            assert aggregated_column in self.dataframe
+            aggregate = (
+                points_within_cat.groupby("index_right")[aggregated_column]
+                .sum()
+                .rename("count_column")
+            )
+
+            # Merge these counts back into the 'cat' GeoDataFrame
+            cat_with_counts = self.map.join(aggregate, how="left")
+            cat_with_counts.fillna(
+                0, inplace=True
+            )  # Replace NaN with 0 for polygons with no adults
+
+            cat_with_counts.plot(
+                column="count_column", ax=ax, legend=False, cmap="viridis"
+            )  # Use a colormap of your choice
+            if legend_title != "":
+                # Create a color bar manually
+                norm = matplotlib.colors.Normalize(
+                    vmin=cat_with_counts["count_column"].min(),
+                    vmax=cat_with_counts["count_column"].max(),
+                )
+                sm = plt.cm.ScalarMappable(cmap="viridis", norm=norm)
+                sm._A = []  # Dummy array for the ScalarMappable
+                cbar = fig.colorbar(
+                    sm, ax=ax, orientation="vertical", shrink=0.7, aspect=20
+                )
+                cbar.set_label(legend_title)
+
+        plt.show()
+        return
