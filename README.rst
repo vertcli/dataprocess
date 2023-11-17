@@ -75,8 +75,9 @@ Para visualizar datos geográficos::
 Contribución
 ------------
 
-Las contribuciones son bienvenidas. Por favor, lea [CONTRIBUTING.md](CONTRIBUTING.md) para obtener detalles sobre nuestro código de conducta y el proceso para enviarnos solicitudes de extracción.
+Las contribuciones son bienvenidas. Por favor, lea `CONTRIBUTING.md`_ para obtener detalles sobre nuestro código de conducta y el proceso para enviarnos solicitudes de extracción.
 
+.. _`CONTRIBUTING.md`: https://github.com/vertcli/dataprocess/blob/master/CONTRIBUTING.rst
 
 Autores
 -------
