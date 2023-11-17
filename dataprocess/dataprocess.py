@@ -58,7 +58,9 @@ class ClienteCoberturaMovil:
         self.dataframe = tarea_consulta.to_dataframe()
         return self.dataframe
 
-    def generar_kpi_cobertura(self, metric: str) -> pd.DataFrame:
+    def generar_kpi_cobertura(
+        self, metric: str, search_parameters: Union[None, Dict[str:str]] = None
+    ) -> pd.DataFrame:
         """Genera KPIs relacionados con la cobertura de la red móvil.
 
         Returns:
@@ -70,6 +72,10 @@ class ClienteCoberturaMovil:
         FROM `{self.nombre_tabla}`
         GROUP BY town_name, postal_code
         """
+        if search_parameters is not None:
+            consulta_kpi += f""" WHERE """ + " AND ".join(
+                [f"{key}='{value}'" for key, value in search_parameters.items()]
+            )
         tarea_consulta = self.cliente.query(consulta_kpi)
         self.dataframe = tarea_consulta.to_dataframe()
         return self.dataframe
