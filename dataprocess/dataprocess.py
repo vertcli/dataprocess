@@ -2,12 +2,11 @@
 """Main module template with example functions."""
 
 
-from typing import List, Any, Dict, Union, Literal, Tuple
+from typing import Any, Dict, Union, Literal, Tuple
 from google.cloud import bigquery
 import pandas as pd
 from google.oauth2.service_account import Credentials
 import geopandas as gpd
-from shapely.geometry import Point
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib
@@ -107,15 +106,12 @@ class ClienteCoberturaMovil:
         GROUP BY town_name, postal_code, long, lat
         """
         tarea_consulta = self.cliente.query(consulta_kpi)
-        print("DID QUERY")
         self.dataframe = tarea_consulta.to_dataframe()
-        print("DID ASSIGN")
         self.dataframe = (
             self.dataframe.groupby(["town_name", "postal_code"])[["long", "lat"]]
             .mean()
             .reset_index()
         )
-        print("DID GROUP")
         return self.dataframe
 
     def generate_map_plot(
