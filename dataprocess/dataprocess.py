@@ -70,12 +70,14 @@ class ClienteCoberturaMovil:
         consulta_kpi = f"""
         SELECT town_name, postal_code, {metric}(signal) as signal
         FROM `{self.nombre_tabla}`
-        GROUP BY town_name, postal_code
         """
         if search_parameters is not None:
-            consulta_kpi += f""" WHERE """ + " AND ".join(
+            consulta_kpi += f"""WHERE """ + " AND ".join(
                 [f"{key}='{value}'" for key, value in search_parameters.items()]
             )
+        consulta_kpi += f"""
+        GROUP BY town_name, postal_code
+        """
         tarea_consulta = self.cliente.query(consulta_kpi)
         self.dataframe = tarea_consulta.to_dataframe()
         return self.dataframe
