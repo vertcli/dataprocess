@@ -3,75 +3,90 @@ DataProcess
 ===========
 
 
-## Descripción
+Descripción
+-----------
 
-`dataprocess` es una biblioteca de Python diseñada para procesar datos geolocalizados. Facilita la conexión con BigQuery para la base de datos cobertura de telefonía móvil en Cataluña y la generación de KPIs útiles para identificar oportunidades de mercado en la provisión de servicios de telecomunicaciones.
+``dataprocess`` es una biblioteca de Python diseñada para procesar datos geolocalizados. Facilita la conexión con BigQuery para la base de datos cobertura de telefonía móvil en Cataluña y la generación de KPIs útiles para identificar oportunidades de mercado en la provisión de servicios de telecomunicaciones. Links de interés:
 
-## Instalación
+* `BigQuery Dataset`_
+* `Population Dataset`_
+* `Geodatos INSPIRE`_
+* `Catalan Map`_
 
-Para instalar `dataprocess`, simplemente ejecute el siguiente comando:
+.. _BigQuery Dataset: https://console.cloud.google.com/marketplace/product/gencat/cell_coverage
+.. _Geodatos INSPIRE: https://www.ide.cat/es/Geodatos/Geodatos-INSPIRE
+.. _Population Dataset: https://analisi.transparenciacatalunya.cat/en/Demografia/Poblaci-de-Catalunya-per-municipi-rang-d-edat-i-se/b4rr-d25b/data
+.. _Catalan Map: https://datacloud.ide.cat/geodades/inspire-unitats-estadistiques/
 
-```bash
-pip install git+https://github.com/vertcli/dataprocess
-```
+Instalación
+-----------
 
-## Uso
+Para instalar ``dataprocess``, simplemente ejecute el siguiente comando::
 
-### Configuración Inicial
+    pip install git+https://github.com/vertcli/dataprocess
 
-Antes de comenzar, necesitará un archivo de credenciales de Google Cloud. Una vez que tenga este archivo, puede cargar sus credenciales de la siguiente manera:
+Uso
+---
 
-```python
-from dataprocess import load_credentials
+Configuración Inicial
+~~~~~~~~~~~~~~~~~~~~~
 
-credenciales = load_credentials('ruta/a/tu/archivo/credenciales.json')
-```
+Antes de comenzar, necesitará un archivo de credenciales de Google Cloud. Una vez que tenga este archivo, puede cargar sus credenciales de la siguiente manera::
 
-### Creando una Instancia del Cliente
+    from dataprocess import load_credentials
 
-Para interactuar con los datos de cobertura, cree una instancia de `ClienteCoberturaMovil`:
+    credenciales = load_credentials('ruta/a/tu/archivo/credenciales.json')
 
-```python
-from dataprocess import ClienteCoberturaMovil
 
-cliente = ClienteCoberturaMovil(
-    nombre_tabla='nombre_de_tu_tabla_bigquery',
-    credenciales=credenciales
-)
-```
+Creando una Instancia del Cliente
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-### Selección de Datos y Generación KPIs
+Para interactuar con los datos de cobertura, cree una instancia de ``ClienteCoberturaMovil``::
 
-Puede seleccionar datos y generar KPIs de la siguiente manera:
+    from dataprocess import ClienteCoberturaMovil
 
-```python
-# Seleccionar datos
-parametros_busqueda = {'operator': 'Movistar', 'network': '4G'}
+    cliente = ClienteCoberturaMovil(
+        nombre_tabla='nombre_de_tu_tabla_bigquery',
+        credenciales=credenciales
+    )
 
-# Generar KPIs
-kpi_df = cliente.generar_kpi_cobertura(metric='AVG',search_parameters=parametros_busqueda)
-```
 
-### Visualización de Datos en Mapas
+Selección de Datos y Generación KPIs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Para visualizar datos geográficos:
+Puede seleccionar datos y generar KPIs de la siguiente manera::
 
-```python
-cliente.set_map('ruta/al/archivo/de/mapa.gml')
-cliente.generate_map_plot(operation='point_count', aggregated_column='signal')
-```
+    # Seleccionar datos
+    parametros_busqueda = {'operator': 'Movistar', 'network': '4G'}
 
-## Contribución
+    # Generar KPIs
+    kpi_df = cliente.generar_kpi_cobertura(metric='AVG',search_parameters=parametros_busqueda)
+
+
+Visualización de Datos en Mapas
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Para visualizar datos geográficos::
+
+    cliente.set_map('ruta/al/archivo/de/mapa.gml')
+    cliente.generate_map_plot(operation='point_count', aggregated_column='signal')
+
+
+Contribución
+------------
 
 Las contribuciones son bienvenidas. Por favor, lea [CONTRIBUTING.md](CONTRIBUTING.md) para obtener detalles sobre nuestro código de conducta y el proceso para enviarnos solicitudes de extracción.
 
 
-## Autores
+Autores
+-------
 
-- Albert Climent Bigas - *Trabajo inicial* - [vertcli](https://github.com/vertcli)
+- Albert Climent Bigas  - vertcli_
+
+.. _vertcli: https://github.com/vertcli
 
 
-Credits
+Creditos
 -------
 
 This package was created with Cookiecutter_ and the `pyOpenSci/cookiecutter-pyopensci`_ project template, based off `audreyr/cookiecutter-pypackage`_.
