@@ -59,7 +59,7 @@ class ClienteCoberturaMovil:
         return self.dataframe
 
     def generar_kpi_cobertura(
-        self, metric: str, search_parameters: Union[None, Dict[str:str]] = None
+        self, metric: str, search_parameters: Union[None, Dict[str, str]] = None
     ) -> pd.DataFrame:
         """Genera KPIs relacionados con la cobertura de la red móvil.
 
